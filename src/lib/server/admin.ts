@@ -17,6 +17,5 @@ try {
   }
 }
 
-
 export const adminDB = getFirestore();
 export const adminAuth = getAuth();
