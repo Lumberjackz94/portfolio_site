@@ -13,7 +13,7 @@
   
   <main class="prose text-center mx-auto mt-8">
 
-    <h1 class="text-7xl text-purple-500">
+    <h1 class="text-3xl lg:text-6xl text-purple-500">
       @{data.username}
     </h1>
   
@@ -25,7 +25,7 @@
     />
   
     <p class="text-xl my-8">{data.bio ?? "no bio yet..."}</p>
-    <ul class="list-none flex flex-col items-center">
+    <ul class="list-none">
       {#each data.links as item}
       <li class="my-2">
         <UserLink {...item} />
@@ -34,3 +34,4 @@
     </ul>
   
   </main>
+  
