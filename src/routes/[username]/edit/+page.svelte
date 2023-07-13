@@ -2,7 +2,8 @@
   import { page } from "$app/stores";
   import UserLink from "$lib/components/UserLink.svelte";
   import SortableList from "$lib/components/SortableList.svelte";
-  import { db, userData, user } from "$lib/firebase";
+  import { db, userData, user, auth } from "$lib/firebase";
+  import { signOut } from "firebase/auth";
   import {
     arrayRemove,
     arrayUnion,
@@ -11,6 +12,7 @@
     updateDoc,
   } from "firebase/firestore";
   import { writable } from "svelte/store";
+  import { goto } from "$app/navigation";
 
   const icons = [
     "Twitter",
@@ -34,6 +36,12 @@
   $: urlIsValid = $formData.url.match(/^(ftp|http|https):\/\/[^ "]+$/);
   $: titleIsValid = $formData.title.length < 20 && $formData.title.length > 0;
   $: formIsValid = urlIsValid && titleIsValid;
+
+  async function signOutSSR() {
+    const res = await fetch("/api/signin", { method: "DELETE" });
+    await signOut(auth);
+    goto("/")
+  }
 
   async function addLink(e: SubmitEvent) {
     const userRef = doc(db, "users", $user!.uid);
@@ -73,80 +81,116 @@
   }
 </script>
 
-<main class="max-w-xl mx-auto">
-  {#if $userData?.username == $page.params.username}
+<div class="navbar bg-base-100">
+  <div class="navbar-start">
+    <div class="dropdown">
+      <label tabindex="0" class="btn btn-ghost btn-circle">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+        </svg>
+      </label>
+      <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+        <li><a href="/">Homepage</a></li>
+        <li><a href="https://fireship.io/courses/sveltekit">Full course</a></li>
+        <li><a href="https://github.com/fireship-io/fkit-course">Source Code</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="navbar-center">
+    <span class="btn btn-ghost normal-case text-xl">
+      <a href="/{$userData?.username}">👁️ <span class="hidden lg:inline">View</span></a>
+    </span>
+    <span class="btn btn-ghost normal-case text-xl btn-active">
+      <a href="/{$userData?.username}/edit">🔗 <span class="hidden lg:inline">Edit</span></a>
+    </span> 
+    <span class="btn btn-ghost normal-case text-xl">
+      <a href="/{$userData?.username}/bio">🍪 <span class="hidden lg:inline">SSR Edit</span></a>
+    </span>
+  </div> 
+  <div class="navbar-end">
+    <button class="btn btn-outline btn-xs" on:click={() => signOutSSR()}>Sign Out</button>
+  </div>
+</div>
+
+<div class="mb-12 pb-12">
+  <main class="max-w-xl mx-auto">
     <h1 class="mx-2 text-2xl font-bold mt-8 mb-4 text-center">
       Edit your Profile
     </h1>
 
-    <SortableList list={$userData?.links} on:sort={sortList} let:item>
-      <div class="group relative">
-        <UserLink {...item} />
-        <button
-            on:click={() => deleteLink(item)}
-            class="btn btn-xs btn-error invisible group-hover:visible transition-all absolute -right-6 bottom-10"
-            >Delete</button
-          >
-      </div>
-    </SortableList>
+    {#if $userData?.username == $page.params.username}
 
-    {#if showForm}
-      <form
-        on:submit|preventDefault={addLink}
-        class="bg-base-200 p-6 w-full mx-auto rounded-xl"
-      >
-        <select
-          name="icon"
-          class="select select-sm"
-          bind:value={$formData.icon}
-        >
-          {#each icons as icon}
-            <option value={icon.toLowerCase()}>{icon}</option>
-          {/each}
-        </select>
-        <input
-          name="title"
-          type="text"
-          placeholder="Title"
-          class="input input-sm"
-          bind:value={$formData.title}
-        />
-        <input
-          name="url"
-          type="text"
-          placeholder="URL"
-          class="input input-sm"
-          bind:value={$formData.url}
-        />
-        <div class="my-4">
-          {#if !titleIsValid}
-            <p class="text-error text-xs">Must have valid title</p>
-          {/if}
-          {#if !urlIsValid}
-            <p class="text-error text-xs">Must have a valid URL</p>
-          {/if}
-          {#if formIsValid}
-            <p class="text-success text-xs">Looks good!</p>
-          {/if}
+      <div class="text-center my-4"><a class="btn btn-outline btn-xs" href="/login/photo">Change photo</a></div>
+
+      <SortableList list={$userData?.links} on:sort={sortList} let:item>
+        <div class="group relative">
+          <UserLink {...item} />
+          <button
+              on:click={() => deleteLink(item)}
+              class="btn btn-xs btn-error invisible group-hover:visible transition-all absolute -right-6 bottom-10"
+              >Delete</button
+            >
         </div>
+      </SortableList>
 
+      {#if showForm}
+        <form
+          on:submit|preventDefault={addLink}
+          class="bg-base-200 p-6 w-full mx-auto rounded-xl"
+        >
+          <select
+            name="icon"
+            class="select select-sm"
+            bind:value={$formData.icon}
+          >
+            {#each icons as icon}
+              <option value={icon.toLowerCase()}>{icon}</option>
+            {/each}
+          </select>
+          <input
+            name="title"
+            type="text"
+            placeholder="Title"
+            class="input input-sm"
+            bind:value={$formData.title}
+          />
+          <input
+            name="url"
+            type="text"
+            placeholder="URL"
+            class="input input-sm"
+            bind:value={$formData.url}
+          />
+          <div class="my-4">
+            {#if !titleIsValid}
+              <p class="text-error text-xs">Must have valid title</p>
+            {/if}
+            {#if !urlIsValid}
+              <p class="text-error text-xs">Must have a valid URL</p>
+            {/if}
+            {#if formIsValid}
+              <p class="text-success text-xs">Looks good!</p>
+            {/if}
+          </div>
+
+          <button
+            disabled={!formIsValid}
+            type="submit"
+            class="btn btn-success block">Add Link</button
+          >
+
+          <button type="button" class="btn btn-xs my-4" on:click={cancelLink}
+            >Cancel</button
+          >
+        </form>
+      {:else}
         <button
-          disabled={!formIsValid}
-          type="submit"
-          class="btn btn-success block">Add Link</button
+          on:click={() => (showForm = true)}
+          class="btn btn-outline btn-info block mx-auto my-4"
         >
-
-        <button type="button" class="btn btn-xs my-4" on:click={cancelLink}
-          >Cancel</button
-        >
-      </form>
-    {:else}
-      <button
-        on:click={() => (showForm = true)}
-        class="btn btn-outline btn-info block mx-auto my-4"
-      >
-        Add a Link
-      </button>
+          Add a Link
+        </button>
+      {/if}
     {/if}
-  {/if}
-</main>
+  </main>
+</div>

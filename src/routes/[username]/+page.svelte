@@ -1,7 +1,7 @@
 <script lang="ts">
   import UserLink from "$lib/components/UserLink.svelte";
     import type { PageData } from "./$types";
-    
+
     export let data: PageData;
   </script>
   
@@ -12,6 +12,8 @@
   
   
   <main class="prose text-center mx-auto mt-8">
+
+    <a href="/{data.username}/edit" class="btn btn-secondary btn-xs absolute right-4 top-4">Edit Profile</a>
 
     <h1 class="text-3xl lg:text-6xl text-purple-500">
       @{data.username}
